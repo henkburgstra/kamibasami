@@ -1,16 +1,11 @@
 package main
 
 import (
-	"strongfit/nevo"
-
 	"github.com/henkburgstra/kamibasami/controllers"
 	"github.com/henkburgstra/kamibasami/node"
 	"github.com/henkburgstra/kamibasami/service"
 
-	"fmt"
-
 	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -26,23 +21,24 @@ func testNode(c *gin.Context) {
 	c.String(200, path)
 }
 
-func apiNevoData(c *gin.Context, db *sqlx.DB) {
-	var respons NevoDataResonse
-	respons.Foodgroups = nevo.AllFoodgroups(db)
-	respons.Foods = nevo.AllFoods(db)
-	respons.FoodgroupCount = len(respons.Foodgroups)
-	respons.FoodCount = len(respons.Foods)
-	c.JSON(200, respons)
-}
+// func apiNevoData(c *gin.Context, db *sqlx.DB) {
+// 	var respons NevoDataResonse
+// 	respons.Foodgroups = nevo.AllFoodgroups(db)
+// 	respons.Foods = nevo.AllFoods(db)
+// 	respons.FoodgroupCount = len(respons.Foodgroups)
+// 	respons.FoodCount = len(respons.Foods)
+// 	c.JSON(200, respons)
+// }
 
 func main() {
 	svc := service.NewService()
-	db, err := sqlx.Open("sqlite3", "strongfit.db")
-	if err != nil {
-		fmt.Println("Fout bij het openen van strongfit.db")
-		fmt.Println(err)
-		return
-	}
+	svc.SetNodeRepo(node.NewMockNodeRepo())
+	//	db, err := sqlx.Open("sqlite3", "strongfit.db")
+	// if err != nil {
+	// 	fmt.Println("Fout bij het openen van strongfit.db")
+	// 	fmt.Println(err)
+	// 	return
+	// }
 	router := gin.Default()
 	router.GET("/test", testNode)
 	for _, controller := range controllers.Get() {
