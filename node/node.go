@@ -97,7 +97,7 @@ func (r *MockNodeRepo) Put(node INode) (err error) {
 func (r *MockNodeRepo) Get(id string) (node INode, err error) {
 	node, ok := r.nodesByID[id]
 	if !ok {
-		err = NewNodeNotFoundError(id)
+		err = NewNotFoundError(id)
 	}
 	return
 }
@@ -111,12 +111,12 @@ func (r *MockNodeRepo) GetChildren(id string) []INode {
 func (r *MockNodeRepo) GetWithParent(name string, parent string) (node INode, err error) {
 	nodes := r.nodesByParent[name]
 	if nodes == nil {
-		err = NewNodeNotFoundError(name)
+		err = NewNotFoundError(name)
 		return
 	}
 	node = nodes[parent]
 	if node == nil {
-		err = NewNodeNotFoundError(name)
+		err = NewNotFoundError(name)
 	}
 	return
 }
