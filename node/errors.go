@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// NodeNotFoundError indicates that a given Node does not exist
 type NodeNotFoundError struct {
 	id string
 }
