@@ -161,6 +161,7 @@ func GetPath(r INodeRepo, node INode) (path string) {
 			break
 		}
 	}
+	// reverse the path slice
 	for i := len(l)/2 - 1; i >= 0; i-- {
 		opp := len(l) - 1 - i
 		l[i], l[opp] = l[opp], l[i]
