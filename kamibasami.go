@@ -3,7 +3,9 @@ package main
 import (
 	"strongfit/nevo"
 
+	"github.com/henkburgstra/kamibasami/controllers"
 	"github.com/henkburgstra/kamibasami/node"
+	"github.com/henkburgstra/kamibasami/service"
 
 	"fmt"
 
@@ -11,17 +13,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-type NevoDataResonse struct {
-	FoodgroupCount int
-	FoodCount      int
-	Foodgroups     []*nevo.Foodgroup
-	Foods          []*nevo.Food
-}
-
-func apiNevoImport(c *gin.Context) {
-	nevo.NevoImport()
-}
 
 func testNode(c *gin.Context) {
 	repo := node.NewMockNodeRepo()
@@ -45,6 +36,7 @@ func apiNevoData(c *gin.Context, db *sqlx.DB) {
 }
 
 func main() {
+	svc := service.NewService()
 	db, err := sqlx.Open("sqlite3", "strongfit.db")
 	if err != nil {
 		fmt.Println("Fout bij het openen van strongfit.db")
@@ -52,10 +44,22 @@ func main() {
 		return
 	}
 	router := gin.Default()
-	router.GET("/api/nevo/import", apiNevoImport)
-	router.GET("/api/nevo/data", func(c *gin.Context) {
-		apiNevoData(c, db)
-	})
 	router.GET("/test", testNode)
+	for _, controller := range controllers.Get() {
+		f := router.GET
+		switch controller.Method {
+		case "HEAD":
+			f = router.HEAD
+		case "POST":
+			f = router.POST
+		case "PUT":
+			f = router.PUT
+		case "DELETE":
+			f = router.DELETE
+		}
+		f(controller.URI, func(c *gin.Context) {
+			controller.Handler(svc, c)
+		})
+	}
 	router.Run()
 }
