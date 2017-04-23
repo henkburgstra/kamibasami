@@ -5,27 +5,27 @@ import (
 	"testing"
 )
 
-func TestNodeNotFoundError_Id(t *testing.T) {
+func TestNotFoundError_Id(t *testing.T) {
 	tests := []struct {
 		name string
-		e    *NodeNotFoundError
+		e    *NotFoundError
 		want string
 	}{
 	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.e.Id(); got != tt.want {
+			if got := tt.e.ID(); got != tt.want {
 				t.Errorf("NodeNotFoundError.Id() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestNodeNotFoundError_Error(t *testing.T) {
+func TestNotFoundError_Error(t *testing.T) {
 	tests := []struct {
 		name string
-		e    *NodeNotFoundError
+		e    *NotFoundError
 		want string
 	}{
 	// TODO: Add test cases.
@@ -39,20 +39,20 @@ func TestNodeNotFoundError_Error(t *testing.T) {
 	}
 }
 
-func TestNewNodeNotFoundError(t *testing.T) {
+func TestNewNotFoundError(t *testing.T) {
 	type args struct {
 		id string
 	}
 	tests := []struct {
 		name string
 		args args
-		want *NodeNotFoundError
+		want *NotFoundError
 	}{
 	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewNodeNotFoundError(tt.args.id); !reflect.DeepEqual(got, tt.want) {
+			if got := NewNotFoundError(tt.args.id); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewNodeNotFoundError() = %v, want %v", got, tt.want)
 			}
 		})

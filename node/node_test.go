@@ -2,6 +2,7 @@ package node
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -187,6 +188,40 @@ func TestGetPath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if gotPath := GetPath(tt.args.r, tt.args.node); gotPath != tt.wantPath {
 				t.Errorf("GetPath() = %v, want %v", gotPath, tt.wantPath)
+			}
+		})
+	}
+}
+
+func TestCreatePath(t *testing.T) {
+	type args struct {
+		r    INodeRepo
+		path string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantNode INode
+		wantErr  bool
+	}{
+		{"valid path", args{NewMockNodeRepo(), "my/new/folder"}, nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotNode, err := CreatePath(tt.args.r, tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreatePath() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			path := NormalizePath(tt.args.path)
+			parts := strings.Split(path, "/")
+			if len(parts) == 0 {
+				t.Errorf("CreatePath() invalid (empty) path")
+				return
+			}
+			if gotNode.Name() != parts[len(parts)-1] {
+				t.Errorf("CreatePath() node name '%s' is incorrect", gotNode.Name())
+				return
 			}
 		})
 	}
