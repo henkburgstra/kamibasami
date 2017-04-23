@@ -23,9 +23,11 @@ func storePage(svc *service.Service, url string, path string) (err error) {
 	if titleNode.Pointer != nil {
 		title = titleNode.Text()
 	}
-	parent := node.CreatePath(path)
-	// TODO uuid
-	page := node.NewWebpage("id", title, parent.ID())
+	parent, err := node.CreatePath(svc.NodeRepo(), path)
+	if err != nil {
+		return
+	}
+	page := node.NewWebpage("", title, parent.ID())
 	svc.NodeRepo().Put(page)
 	return
 }

@@ -2,6 +2,8 @@ package node
 
 import (
 	"strings"
+
+	"github.com/satori/go.uuid"
 )
 
 // INode is the interface for Node types.
@@ -65,6 +67,9 @@ func (n *Node) Fields() []Field {
 }
 
 func NewNode(id string, name string, parentID string) *Node {
+	if id == "" {
+		id = uuid.NewV4().String()
+	}
 	return &Node{id: id, name: name, parentID: parentID}
 }
 
@@ -121,8 +126,8 @@ func (r *MockNodeRepo) GetWithParent(name string, parent string) (node INode, er
 	return
 }
 
-func NormalizePath(path string) (path string) {
-	path = strings.Replace(path, "\\", "/", -1)
+func NormalizePath(p string) (path string) {
+	path = strings.Replace(p, "\\", "/", -1)
 	path = strings.Trim(path, "\\/")
 	return
 }
@@ -191,8 +196,7 @@ func CreatePath(r INodeRepo, path string) (node INode, err error) {
 		name := parts[i]
 		node, err = r.GetWithParent(name, parentID)
 		if err != nil {
-			// TODO: new uuid
-			node = NewNode("id", name, parentID)
+			node = NewNode("", name, parentID)
 			err = r.Put(node)
 			if err != nil {
 				return
