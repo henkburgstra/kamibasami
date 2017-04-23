@@ -121,10 +121,15 @@ func (r *MockNodeRepo) GetWithParent(name string, parent string) (node INode, er
 	return
 }
 
-// GetWithPath returns the Node associated with a path.
-func GetWithPath(r INodeRepo, path string) (node INode, err error) {
+func NormalizePath(path string) (path string) {
 	path = strings.Replace(path, "\\", "/", -1)
 	path = strings.Trim(path, "\\/")
+	return
+}
+
+// GetWithPath returns the Node associated with a path.
+func GetWithPath(r INodeRepo, path string) (node INode, err error) {
+	path = NormalizePath(path)
 	parts := strings.Split(path, "/")
 
 	if len(parts) == 1 {
@@ -167,5 +172,34 @@ func GetPath(r INodeRepo, node INode) (path string) {
 		l[i], l[opp] = l[opp], l[i]
 	}
 	path = strings.Join(l, "/")
+	return
+}
+
+// CreatePath creates all missing Nodes in a path
+// returns the last Node
+func CreatePath(r INodeRepo, path string) (node INode, err error) {
+	parts := strings.Split(path, "/")
+
+	if len(parts) == 1 {
+		err = NewInvalidPathError(path)
+		return
+	}
+
+	var parentID string
+
+	for i := 0; i < len(parts); i++ {
+		name := parts[i]
+		node, err = r.GetWithParent(name, parentID)
+		if err != nil {
+			// TODO: new uuid
+			node = NewNode("id", name, parentID)
+			err = r.Put(node)
+			if err != nil {
+				return
+			}
+		}
+		parentID = node.ID()
+	}
+
 	return
 }
