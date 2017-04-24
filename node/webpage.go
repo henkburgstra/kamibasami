@@ -12,6 +12,6 @@ func NewWebpage(id string, name string, parentID string) *Webpage {
 
 func (n *Webpage) Fields() []Field {
 	return []Field{
-		Field{Name: "URL"},
+		Field{Name: "URL", Type: String},
 	}
 }

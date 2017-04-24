@@ -15,6 +15,8 @@ type INode interface {
 	ParentID() string
 	SetParentID(string)
 	Fields() []Field
+	Value(name string) interface{}
+	SetValue(name string, value interface{})
 }
 
 // INodeRepo is the interface for Node repositories.
@@ -30,6 +32,7 @@ type Node struct {
 	id       string
 	name     string
 	parentID string
+	values   map[string]interface{}
 }
 
 // ID returns the ID of a Node.
@@ -66,11 +69,23 @@ func (n *Node) Fields() []Field {
 	return make([]Field, 0)
 }
 
+func (n *Node) Value(name string) interface{} {
+	value, ok := n.values[name]
+	if ok {
+		return value
+	}
+	return nil
+}
+
+func (n *Node) SetValue(name string, value interface{}) {
+	n.values[name] = value
+}
+
 func NewNode(id string, name string, parentID string) *Node {
 	if id == "" {
 		id = uuid.NewV4().String()
 	}
-	return &Node{id: id, name: name, parentID: parentID}
+	return &Node{id: id, name: name, parentID: parentID, values: make(map[string]interface{})}
 }
 
 // MockNodeRepo mocks the INodeRepo interface.

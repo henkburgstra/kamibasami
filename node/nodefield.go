@@ -25,6 +25,7 @@ type Field struct {
 	Name        string
 	Type        FieldType
 	Size        int
+	Default     interface{}
 	Description string
 	Tooltip     string
 }
