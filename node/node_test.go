@@ -226,3 +226,21 @@ func TestCreatePath(t *testing.T) {
 		})
 	}
 }
+
+func TestRegisterConstructor(t *testing.T) {
+	type args struct {
+		nodeType    string
+		constructor Constructor
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			RegisterConstructor(tt.args.nodeType, tt.args.constructor)
+		})
+	}
+}

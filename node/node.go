@@ -14,6 +14,14 @@ func checkerr(e error) {
 	}
 }
 
+type Constructor func(node INode) INode
+
+var constructors map[string]Constructor = make(map[string]Constructor)
+
+func RegisterConstructor(nodeType string, constructor Constructor) {
+	constructors[nodeType] = constructor
+}
+
 // INode is the interface for Node types.
 type INode interface {
 	ID() string
@@ -33,7 +41,7 @@ type INode interface {
 type INodeRepo interface {
 	Get(id string) (node INode, err error)
 	GetWithParent(name string, parent string) (node INode, err error)
-	GetChildren(id string) []INode
+	GetChildren(id string) (nodes []INode, err error)
 	Put(node INode) (err error)
 }
 
@@ -153,18 +161,18 @@ func (r *MockNodeRepo) Get(id string) (node INode, err error) {
 	return
 }
 
-func (r *MockNodeRepo) GetChildren(id string) []INode {
-	c := make([]INode, 0)
-	return c
+func (r *MockNodeRepo) GetChildren(id string) (nodes []INode, err error) {
+	nodes = make([]INode, 0)
+	return
 }
 
-func (r *DBNodeRepo) GetChildren(id string) []INode {
-	c := make([]INode, 0)
+func (r *DBNodeRepo) GetChildren(id string) (nodes []INode, err error) {
+	nodes = make([]INode, 0)
 	rows, err := r.db.Query(`SELECT node_id, node_type, node_name, node_values
 		FROM node
 		WHERE node_id = ?`, id)
 	if err != nil {
-		return c
+		return
 	}
 	defer rows.Close()
 
@@ -174,15 +182,15 @@ func (r *DBNodeRepo) GetChildren(id string) []INode {
 	nodeValues := ""
 
 	for rows.Next() {
-		if err := rows.Scan(&nodeID, &nodeType, &nodeName, &nodeValues); err != nil {
-			return c
+		if err = rows.Scan(&nodeID, &nodeType, &nodeName, &nodeValues); err != nil {
+			return
 		}
 		node := NewNode(nodeID, nodeName, id)
 		node.SetType(nodeType)
-		c = append(c, node)
+		nodes = append(nodes, node)
 	}
 
-	return c
+	return
 }
 
 // GetWithParent implements INodeRepo.GetWithParent.
