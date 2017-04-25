@@ -22,6 +22,10 @@ func RegisterConstructor(nodeType string, constructor Constructor) {
 	constructors[nodeType] = constructor
 }
 
+func GetConstructor(nodeType string) Constructor {
+	return constructors[nodeType]
+}
+
 // INode is the interface for Node types.
 type INode interface {
 	ID() string
