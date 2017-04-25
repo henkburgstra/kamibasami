@@ -1,9 +1,13 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/henkburgstra/kamibasami/controllers"
 	"github.com/henkburgstra/kamibasami/node"
 	"github.com/henkburgstra/kamibasami/service"
+
+	"database/sql"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
@@ -31,14 +35,16 @@ func testNode(c *gin.Context) {
 // }
 
 func main() {
+	db, err := sql.Open("sqlite3", "kamibasami.db")
+	if err != nil {
+		fmt.Println("Fout bij het openen van strongfit.db")
+		fmt.Println(err)
+		return
+	}
+	node.CreateTables(db)
 	svc := service.NewService()
-	svc.SetNodeRepo(node.NewMockNodeRepo())
-	//	db, err := sqlx.Open("sqlite3", "strongfit.db")
-	// if err != nil {
-	// 	fmt.Println("Fout bij het openen van strongfit.db")
-	// 	fmt.Println(err)
-	// 	return
-	// }
+	svc.SetNodeRepo(node.NewDBNodeRepo(db, "sqlite"))
+
 	router := gin.Default()
 	router.GET("/test", testNode)
 	for _, controller := range controllers.Get() {

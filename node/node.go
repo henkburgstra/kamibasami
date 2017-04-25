@@ -3,13 +3,23 @@ package node
 import (
 	"strings"
 
+	"database/sql"
+
 	"github.com/satori/go.uuid"
 )
+
+func checkerr(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
 
 // INode is the interface for Node types.
 type INode interface {
 	ID() string
 	SetID(string)
+	Type() string
+	SetType(string)
 	Name() string
 	SetName(string)
 	ParentID() string
@@ -30,6 +40,7 @@ type INodeRepo interface {
 // Node is the basic implementation of a Node structure.
 type Node struct {
 	id       string
+	nodeType string
 	name     string
 	parentID string
 	values   map[string]interface{}
@@ -43,6 +54,14 @@ func (n *Node) ID() string {
 // SetID sets the id of a Node.
 func (n *Node) SetID(id string) {
 	n.id = id
+}
+
+func (n *Node) Type() string {
+	return n.nodeType
+}
+
+func (n *Node) SetType(nodeType string) {
+	n.nodeType = nodeType
 }
 
 // Name returns the name of a Node.
@@ -82,9 +101,6 @@ func (n *Node) SetValue(name string, value interface{}) {
 }
 
 func NewNode(id string, name string, parentID string) *Node {
-	if id == "" {
-		id = uuid.NewV4().String()
-	}
 	return &Node{id: id, name: name, parentID: parentID, values: make(map[string]interface{})}
 }
 
@@ -102,15 +118,30 @@ func NewMockNodeRepo() *MockNodeRepo {
 	return r
 }
 
-// Put implements INodeRepo.Put.
-func (r *MockNodeRepo) Put(node INode) (err error) {
-	r.nodesByID[node.ID()] = node
-	nodes := r.nodesByParent[node.Name()]
-	if nodes == nil {
-		nodes = make(map[string]INode)
-		r.nodesByParent[node.Name()] = nodes
+type DBNodeRepo struct {
+	db     *sql.DB
+	dbType string
+}
+
+func NewDBNodeRepo(db *sql.DB, dbType string) *DBNodeRepo {
+	return &DBNodeRepo{db: db, dbType: dbType}
+}
+
+func (r *DBNodeRepo) Get(id string) (node INode, err error) {
+	row := r.db.QueryRow(`SELECT node_id, node_type, node_name, parent_id, node_values
+		FROM node
+		WHERE node_id = ?`, id)
+	nodeID := ""
+	nodeType := ""
+	nodeName := ""
+	parentID := ""
+	nodeValues := ""
+	err = row.Scan(&nodeID, &nodeType, &nodeName, &parentID, &nodeValues)
+	if err != nil {
+		return
 	}
-	nodes[node.ParentID()] = node
+	node = NewNode(nodeID, nodeName, parentID)
+	node.SetType(nodeType)
 	return
 }
 
@@ -127,6 +158,33 @@ func (r *MockNodeRepo) GetChildren(id string) []INode {
 	return c
 }
 
+func (r *DBNodeRepo) GetChildren(id string) []INode {
+	c := make([]INode, 0)
+	rows, err := r.db.Query(`SELECT node_id, node_type, node_name, node_values
+		FROM node
+		WHERE node_id = ?`, id)
+	if err != nil {
+		return c
+	}
+	defer rows.Close()
+
+	nodeID := ""
+	nodeType := ""
+	nodeName := ""
+	nodeValues := ""
+
+	for rows.Next() {
+		if err := rows.Scan(&nodeID, &nodeType, &nodeName, &nodeValues); err != nil {
+			return c
+		}
+		node := NewNode(nodeID, nodeName, id)
+		node.SetType(nodeType)
+		c = append(c, node)
+	}
+
+	return c
+}
+
 // GetWithParent implements INodeRepo.GetWithParent.
 func (r *MockNodeRepo) GetWithParent(name string, parent string) (node INode, err error) {
 	nodes := r.nodesByParent[name]
@@ -137,6 +195,55 @@ func (r *MockNodeRepo) GetWithParent(name string, parent string) (node INode, er
 	node = nodes[parent]
 	if node == nil {
 		err = NewNotFoundError(name)
+	}
+	return
+}
+
+func (r *DBNodeRepo) GetWithParent(name string, parent string) (node INode, err error) {
+	row := r.db.QueryRow(`SELECT node_id, node_type, node_name, node_values
+		FROM node
+		WHERE node_name = ?
+		AND parent_id = ?`, name, parent)
+	nodeID := ""
+	nodeType := ""
+	nodeName := ""
+	nodeValues := ""
+	err = row.Scan(&nodeID, &nodeType, &nodeName, &nodeValues)
+	if err != nil {
+		return
+	}
+	node = NewNode(nodeID, nodeName, parent)
+	node.SetType(nodeType)
+	return
+}
+
+// Put implements INodeRepo.Put.
+func (r *MockNodeRepo) Put(node INode) (err error) {
+	if node.ID() == "" {
+		node.SetID(uuid.NewV4().String())
+	}
+	r.nodesByID[node.ID()] = node
+	nodes := r.nodesByParent[node.Name()]
+	if nodes == nil {
+		nodes = make(map[string]INode)
+		r.nodesByParent[node.Name()] = nodes
+	}
+	nodes[node.ParentID()] = node
+	return
+}
+
+func (r *DBNodeRepo) Put(node INode) (err error) {
+	// TODO: node.Values()
+	if node.ID() == "" {
+		node.SetID(uuid.NewV4().String())
+		_, err = r.db.Exec(`INSERT INTO node
+		(node_id, node_type, node_name, parent_id, node_values)
+		VALUES
+		(?, ?, ?, ?, ?)	`, node.ID(), node.Type(), node.Name(), node.ParentID(), "")
+	} else {
+		_, err = r.db.Exec(`UPDATE node
+		SET node_type = ?, node_name = ?, parent_id = ?, node_values = ?
+		WHERE node_id = ?`, node.Type(), node.Name(), node.ParentID(), "", node.ID())
 	}
 	return
 }
