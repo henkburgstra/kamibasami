@@ -112,8 +112,8 @@ func (n *Node) SetValue(name string, value interface{}) {
 	n.values[name] = value
 }
 
-func NewNode(id string, name string, parentID string) *Node {
-	return &Node{id: id, name: name, parentID: parentID, values: make(map[string]interface{})}
+func NewNode(id string, name string, pare) *Node {
+	return &Node{values: make(map[string]interface{})}
 }
 
 // MockNodeRepo mocks the INodeRepo interface.
