@@ -11,7 +11,7 @@ func NewWebpage(id string, name string, parentID string) *Webpage {
 	return w
 }
 
-func NewWebNode(node INode) INode {
+func WebNodeConstructor(node INode) INode {
 	w := new(Webpage)
 	w.INode = node
 	w.SetType("webpage")
@@ -25,5 +25,5 @@ func (n *Webpage) Fields() []Field {
 }
 
 func init() {
-	RegisterConstructor("webpage", NewWebNode)
+	RegisterConstructor("webpage", WebNodeConstructor)
 }

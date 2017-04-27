@@ -130,33 +130,6 @@ func NewMockNodeRepo() *MockNodeRepo {
 	return r
 }
 
-type DBNodeRepo struct {
-	db     *sql.DB
-	dbType string
-}
-
-func NewDBNodeRepo(db *sql.DB, dbType string) *DBNodeRepo {
-	return &DBNodeRepo{db: db, dbType: dbType}
-}
-
-func (r *DBNodeRepo) Get(id string) (node INode, err error) {
-	row := r.db.QueryRow(`SELECT node_id, node_type, node_name, parent_id, node_values
-		FROM node
-		WHERE node_id = ?`, id)
-	nodeID := ""
-	nodeType := ""
-	nodeName := ""
-	parentID := ""
-	nodeValues := ""
-	err = row.Scan(&nodeID, &nodeType, &nodeName, &parentID, &nodeValues)
-	if err != nil {
-		return
-	}
-	node = NewNode(nodeID, nodeName, parentID)
-	node.SetType(nodeType)
-	return
-}
-
 func (r *MockNodeRepo) Get(id string) (node INode, err error) {
 	node, ok := r.nodesByID[id]
 	if !ok {
@@ -167,33 +140,6 @@ func (r *MockNodeRepo) Get(id string) (node INode, err error) {
 
 func (r *MockNodeRepo) GetChildren(id string) (nodes []INode, err error) {
 	nodes = make([]INode, 0)
-	return
-}
-
-func (r *DBNodeRepo) GetChildren(id string) (nodes []INode, err error) {
-	nodes = make([]INode, 0)
-	rows, err := r.db.Query(`SELECT node_id, node_type, node_name, node_values
-		FROM node
-		WHERE node_id = ?`, id)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-
-	nodeID := ""
-	nodeType := ""
-	nodeName := ""
-	nodeValues := ""
-
-	for rows.Next() {
-		if err = rows.Scan(&nodeID, &nodeType, &nodeName, &nodeValues); err != nil {
-			return
-		}
-		node := NewNode(nodeID, nodeName, id)
-		node.SetType(nodeType)
-		nodes = append(nodes, node)
-	}
-
 	return
 }
 
@@ -211,24 +157,6 @@ func (r *MockNodeRepo) GetWithParent(name string, parent string) (node INode, er
 	return
 }
 
-func (r *DBNodeRepo) GetWithParent(name string, parent string) (node INode, err error) {
-	row := r.db.QueryRow(`SELECT node_id, node_type, node_name, node_values
-		FROM node
-		WHERE node_name = ?
-		AND parent_id = ?`, name, parent)
-	nodeID := ""
-	nodeType := ""
-	nodeName := ""
-	nodeValues := ""
-	err = row.Scan(&nodeID, &nodeType, &nodeName, &nodeValues)
-	if err != nil {
-		return
-	}
-	node = NewNode(nodeID, nodeName, parent)
-	node.SetType(nodeType)
-	return
-}
-
 // Put implements INodeRepo.Put.
 func (r *MockNodeRepo) Put(node INode) (err error) {
 	if node.ID() == "" {
@@ -241,22 +169,6 @@ func (r *MockNodeRepo) Put(node INode) (err error) {
 		r.nodesByParent[node.Name()] = nodes
 	}
 	nodes[node.ParentID()] = node
-	return
-}
-
-func (r *DBNodeRepo) Put(node INode) (err error) {
-	// TODO: node.Values()
-	if node.ID() == "" {
-		node.SetID(uuid.NewV4().String())
-		_, err = r.db.Exec(`INSERT INTO node
-		(node_id, node_type, node_name, parent_id, node_values)
-		VALUES
-		(?, ?, ?, ?, ?)	`, node.ID(), node.Type(), node.Name(), node.ParentID(), "")
-	} else {
-		_, err = r.db.Exec(`UPDATE node
-		SET node_type = ?, node_name = ?, parent_id = ?, node_values = ?
-		WHERE node_id = ?`, node.Type(), node.Name(), node.ParentID(), "", node.ID())
-	}
 	return
 }
 
@@ -339,5 +251,93 @@ func CreatePath(r INodeRepo, path string) (node INode, err error) {
 		parentID = node.ID()
 	}
 
+	return
+}
+
+type DBNodeRepo struct {
+	db     *sql.DB
+	dbType string
+}
+
+func NewDBNodeRepo(db *sql.DB, dbType string) *DBNodeRepo {
+	return &DBNodeRepo{db: db, dbType: dbType}
+}
+
+func (r *DBNodeRepo) Get(id string) (node INode, err error) {
+	row := r.db.QueryRow(`SELECT node_id, node_type, node_name, parent_id, node_values
+		FROM node
+		WHERE node_id = ?`, id)
+	nodeID := ""
+	nodeType := ""
+	nodeName := ""
+	parentID := ""
+	nodeValues := ""
+	err = row.Scan(&nodeID, &nodeType, &nodeName, &parentID, &nodeValues)
+	if err != nil {
+		return
+	}
+	node = NewNode(nodeID, nodeName, parentID)
+	node.SetType(nodeType)
+	return
+}
+
+func (r *DBNodeRepo) Put(node INode) (err error) {
+	// TODO: node.Values()
+	if node.ID() == "" {
+		node.SetID(uuid.NewV4().String())
+		_, err = r.db.Exec(`INSERT INTO node
+		(node_id, node_type, node_name, parent_id, node_values)
+		VALUES
+		(?, ?, ?, ?, ?)	`, node.ID(), node.Type(), node.Name(), node.ParentID(), "")
+	} else {
+		_, err = r.db.Exec(`UPDATE node
+		SET node_type = ?, node_name = ?, parent_id = ?, node_values = ?
+		WHERE node_id = ?`, node.Type(), node.Name(), node.ParentID(), "", node.ID())
+	}
+	return
+}
+
+func (r *DBNodeRepo) GetChildren(id string) (nodes []INode, err error) {
+	nodes = make([]INode, 0)
+	rows, err := r.db.Query(`SELECT node_id, node_type, node_name, node_values
+		FROM node
+		WHERE node_id = ?`, id)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	nodeID := ""
+	nodeType := ""
+	nodeName := ""
+	nodeValues := ""
+
+	for rows.Next() {
+		if err = rows.Scan(&nodeID, &nodeType, &nodeName, &nodeValues); err != nil {
+			return
+		}
+		node := NewNode(nodeID, nodeName, id)
+		node.SetType(nodeType)
+		nodes = append(nodes, node)
+	}
+
+	return
+}
+
+func (r *DBNodeRepo) GetWithParent(name string, parent string) (node INode, err error) {
+	row := r.db.QueryRow(`SELECT node_id, node_type, node_name, node_values
+		FROM node
+		WHERE node_name = ?
+		AND parent_id = ?`, name, parent)
+	nodeID := ""
+	nodeType := ""
+	nodeName := ""
+	nodeValues := ""
+	err = row.Scan(&nodeID, &nodeType, &nodeName, &nodeValues)
+	if err != nil {
+		return
+	}
+	node = NewNode(nodeID, nodeName, parent)
+	node.SetType(nodeType)
 	return
 }
