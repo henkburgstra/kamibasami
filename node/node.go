@@ -26,6 +26,14 @@ func GetConstructor(nodeType string) Constructor {
 	return constructors[nodeType]
 }
 
+func Transform(node INode) INode {
+	constructor, ok := constructors[node.Type()]
+	if ok {
+		return constructor(node)
+	}
+	return node
+}
+
 // INode is the interface for Node types.
 type INode interface {
 	ID() string
@@ -112,8 +120,8 @@ func (n *Node) SetValue(name string, value interface{}) {
 	n.values[name] = value
 }
 
-func NewNode(id string, name string, pare) *Node {
-	return &Node{values: make(map[string]interface{})}
+func NewNode(name string) *Node {
+	return &Node{name: name, values: make(map[string]interface{})}
 }
 
 // MockNodeRepo mocks the INodeRepo interface.
@@ -130,12 +138,12 @@ func NewMockNodeRepo() *MockNodeRepo {
 	return r
 }
 
-func (r *MockNodeRepo) Get(id string) (node INode, err error) {
+func (r *MockNodeRepo) Get(id string) (INode, error) {
 	node, ok := r.nodesByID[id]
 	if !ok {
-		err = NewNotFoundError(id)
+		return nil, NewNotFoundError(id)
 	}
-	return
+	return Transform(node), nil
 }
 
 func (r *MockNodeRepo) GetChildren(id string) (nodes []INode, err error) {
@@ -172,6 +180,8 @@ func (r *MockNodeRepo) Put(node INode) (err error) {
 	return
 }
 
+// NormalizePath makes sure that path delimiters are slashes and not backslashes
+// and that path doesn't start or end with a slash
 func NormalizePath(p string) (path string) {
 	path = strings.Replace(p, "\\", "/", -1)
 	path = strings.Trim(path, "\\/")
@@ -179,28 +189,31 @@ func NormalizePath(p string) (path string) {
 }
 
 // GetWithPath returns the Node associated with a path.
-func GetWithPath(r INodeRepo, path string) (node INode, err error) {
+func GetWithPath(r INodeRepo, path string) (INode, error) {
+	var node INode
 	path = NormalizePath(path)
 	parts := strings.Split(path, "/")
 
 	if len(parts) == 1 {
-		err = NewInvalidPathError(path)
-		return
+		return nil, NewInvalidPathError(path)
 	}
 
 	var parentID string
 
 	for i := 0; i < len(parts); i++ {
 		name := parts[i]
+		var err error
 		node, err = r.GetWithParent(name, parentID)
 		if err != nil {
-			err = NewInvalidPathError(path)
-			return
+			return nil, NewInvalidPathError(path)
 		}
 		parentID = node.ID()
 	}
 
-	return
+	if node == nil {
+		return nil, NewNotFoundError("")
+	}
+	return Transform(node), nil
 }
 
 // GetPath returns the path of a Node.
@@ -227,31 +240,36 @@ func GetPath(r INodeRepo, node INode) (path string) {
 }
 
 // CreatePath creates all missing Nodes in a path
-// returns the last Node
-func CreatePath(r INodeRepo, path string) (node INode, err error) {
+// and returns the last Node
+func CreatePath(r INodeRepo, path string) (INode, error) {
+	var node INode
 	parts := strings.Split(path, "/")
 
 	if len(parts) == 1 {
-		err = NewInvalidPathError(path)
-		return
+		return nil, NewInvalidPathError(path)
 	}
 
 	var parentID string
 
 	for i := 0; i < len(parts); i++ {
 		name := parts[i]
+		var err error
 		node, err = r.GetWithParent(name, parentID)
 		if err != nil {
-			node = NewNode("", name, parentID)
+			node = NewNode(name)
+			node.SetParentID(parentID)
 			err = r.Put(node)
 			if err != nil {
-				return
+				return nil, err
 			}
 		}
 		parentID = node.ID()
 	}
 
-	return
+	if node == nil {
+		return nil, NewNotFoundError("")
+	}
+	return Transform(node), nil
 }
 
 type DBNodeRepo struct {
@@ -263,7 +281,7 @@ func NewDBNodeRepo(db *sql.DB, dbType string) *DBNodeRepo {
 	return &DBNodeRepo{db: db, dbType: dbType}
 }
 
-func (r *DBNodeRepo) Get(id string) (node INode, err error) {
+func (r *DBNodeRepo) Get(id string) (INode, error) {
 	row := r.db.QueryRow(`SELECT node_id, node_type, node_name, parent_id, node_values
 		FROM node
 		WHERE node_id = ?`, id)
@@ -272,13 +290,15 @@ func (r *DBNodeRepo) Get(id string) (node INode, err error) {
 	nodeName := ""
 	parentID := ""
 	nodeValues := ""
-	err = row.Scan(&nodeID, &nodeType, &nodeName, &parentID, &nodeValues)
+	err := row.Scan(&nodeID, &nodeType, &nodeName, &parentID, &nodeValues)
 	if err != nil {
-		return
+		return nil, err
 	}
-	node = NewNode(nodeID, nodeName, parentID)
+	node := NewNode(nodeName)
+	node.SetID(nodeID)
+	node.SetParentID(parentID)
 	node.SetType(nodeType)
-	return
+	return Transform(node), nil
 }
 
 func (r *DBNodeRepo) Put(node INode) (err error) {
@@ -316,15 +336,17 @@ func (r *DBNodeRepo) GetChildren(id string) (nodes []INode, err error) {
 		if err = rows.Scan(&nodeID, &nodeType, &nodeName, &nodeValues); err != nil {
 			return
 		}
-		node := NewNode(nodeID, nodeName, id)
+		node := NewNode(nodeName)
+		node.SetID(nodeID)
+		node.SetParentID(id)
 		node.SetType(nodeType)
-		nodes = append(nodes, node)
+		nodes = append(nodes, Transform(node))
 	}
 
 	return
 }
 
-func (r *DBNodeRepo) GetWithParent(name string, parent string) (node INode, err error) {
+func (r *DBNodeRepo) GetWithParent(name string, parent string) (INode, error) {
 	row := r.db.QueryRow(`SELECT node_id, node_type, node_name, node_values
 		FROM node
 		WHERE node_name = ?
@@ -333,11 +355,13 @@ func (r *DBNodeRepo) GetWithParent(name string, parent string) (node INode, err 
 	nodeType := ""
 	nodeName := ""
 	nodeValues := ""
-	err = row.Scan(&nodeID, &nodeType, &nodeName, &nodeValues)
+	err := row.Scan(&nodeID, &nodeType, &nodeName, &nodeValues)
 	if err != nil {
-		return
+		return nil, err
 	}
-	node = NewNode(nodeID, nodeName, parent)
+	node := NewNode(nodeName)
+	node.SetId(nodeID)
+	node.SetParent(parent)
 	node.SetType(nodeType)
-	return
+	return Transform(node), nil
 }
