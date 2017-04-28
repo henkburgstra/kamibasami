@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"database/sql"
+	"encoding/json"
 
 	"github.com/satori/go.uuid"
 )
@@ -188,6 +189,19 @@ func NormalizePath(p string) (path string) {
 	return
 }
 
+func Values2Json(node INode) (string, error) {
+	n := Transform(node)
+	values := make(map[string]interface{})
+	for _, field := range n.Fields() {
+		values[field.Name] = n.Value(field.Name)
+	}
+	b, err := json.Marshal(values)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 // GetWithPath returns the Node associated with a path.
 func GetWithPath(r INodeRepo, path string) (INode, error) {
 	var node INode
@@ -300,21 +314,34 @@ func (r *DBNodeRepo) Get(id string) (INode, error) {
 	node.SetID(nodeID)
 	node.SetParentID(parentID)
 	node.SetType(nodeType)
+	v := make(map[string]interface{})
+	err = json.Unmarshal([]byte(nodeValues), v)
+	if err != nil {
+		// TODO: logging
+	} else {
+		for key, value := range v {
+			node.SetValue(key, value)
+		}
+	}
 	return Transform(node), nil
 }
 
 func (r *DBNodeRepo) Put(node INode) (err error) {
 	// TODO: node.Values()
+	values, err := Values2Json(node)
+	if err != nil {
+		// TODO: logging
+	}
 	if node.ID() == "" {
 		node.SetID(uuid.NewV4().String())
 		_, err = r.db.Exec(`INSERT INTO node
 		(node_id, node_type, node_name, parent_id, node_values)
 		VALUES
-		(?, ?, ?, ?, ?)	`, node.ID(), node.Type(), node.Name(), node.ParentID(), "")
+		(?, ?, ?, ?, ?)	`, node.ID(), node.Type(), node.Name(), node.ParentID(), values)
 	} else {
 		_, err = r.db.Exec(`UPDATE node
 		SET node_type = ?, node_name = ?, parent_id = ?, node_values = ?
-		WHERE node_id = ?`, node.Type(), node.Name(), node.ParentID(), "", node.ID())
+		WHERE node_id = ?`, node.Type(), node.Name(), node.ParentID(), values, node.ID())
 	}
 	return
 }
