@@ -6,7 +6,9 @@ type Webpage struct {
 
 func NewWebpage(id string, name string, parentID string) *Webpage {
 	w := new(Webpage)
-	w.INode = NewNode(id, name, parentID)
+	w.INode = NewNode(name)
+	w.INode.SetID(id)
+	w.INode.SetParentID(parentID)
 	w.SetType("webpage")
 	return w
 }

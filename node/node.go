@@ -360,8 +360,8 @@ func (r *DBNodeRepo) GetWithParent(name string, parent string) (INode, error) {
 		return nil, err
 	}
 	node := NewNode(nodeName)
-	node.SetId(nodeID)
-	node.SetParent(parent)
+	node.SetID(nodeID)
+	node.SetParentID(parent)
 	node.SetType(nodeType)
 	return Transform(node), nil
 }
