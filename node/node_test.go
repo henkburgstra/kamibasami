@@ -237,12 +237,13 @@ func TestRegisterConstructor(t *testing.T) {
 		name string
 		args args
 	}{
-		{"test webpage constructor", args{nodeType: "webpage", constructor: WebNodeConstructor}},
+		{"test webpage constructor", args{nodeType: "webpage", constructor: NewWebpage}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			RegisterConstructor(tt.args.nodeType, tt.args.constructor)
-			node := GetConstructor("webpage")(NewNode(tt.name))
+			node := GetConstructor("webpage")(NewNode())
+			node.SetName(tt.name)
 			fields := node.Fields()
 			if len(fields) == 0 {
 				t.Errorf("RegisterConstructor() no fields")

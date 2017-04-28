@@ -120,8 +120,8 @@ func (n *Node) SetValue(name string, value interface{}) {
 	n.values[name] = value
 }
 
-func NewNode(name string) *Node {
-	return &Node{name: name, values: make(map[string]interface{})}
+func NewNode() *Node {
+	return &Node{values: make(map[string]interface{})}
 }
 
 // MockNodeRepo mocks the INodeRepo interface.
@@ -256,7 +256,8 @@ func CreatePath(r INodeRepo, path string) (INode, error) {
 		var err error
 		node, err = r.GetWithParent(name, parentID)
 		if err != nil {
-			node = NewNode(name)
+			node = NewNode()
+			node.SetName(name)
 			node.SetParentID(parentID)
 			err = r.Put(node)
 			if err != nil {
@@ -294,7 +295,8 @@ func (r *DBNodeRepo) Get(id string) (INode, error) {
 	if err != nil {
 		return nil, err
 	}
-	node := NewNode(nodeName)
+	node := NewNode()
+	node.SetName(nodeName)
 	node.SetID(nodeID)
 	node.SetParentID(parentID)
 	node.SetType(nodeType)
@@ -336,7 +338,8 @@ func (r *DBNodeRepo) GetChildren(id string) (nodes []INode, err error) {
 		if err = rows.Scan(&nodeID, &nodeType, &nodeName, &nodeValues); err != nil {
 			return
 		}
-		node := NewNode(nodeName)
+		node := NewNode()
+		node.SetName(nodeName)
 		node.SetID(nodeID)
 		node.SetParentID(id)
 		node.SetType(nodeType)
@@ -359,7 +362,8 @@ func (r *DBNodeRepo) GetWithParent(name string, parent string) (INode, error) {
 	if err != nil {
 		return nil, err
 	}
-	node := NewNode(nodeName)
+	node := NewNode()
+	node.SetName(nodeName)
 	node.SetID(nodeID)
 	node.SetParentID(parent)
 	node.SetType(nodeType)

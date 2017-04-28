@@ -27,7 +27,8 @@ func storePage(svc *service.Service, url string, path string) (page *node.Webpag
 	if err != nil {
 		return
 	}
-	page = node.NewWebpage("", title, parent.ID())
+	page = node.NewWebpage(title)
+	page.SetParentID(parent.ID())
 	page.SetValue("URL", url)
 	svc.NodeRepo().Put(page)
 	return

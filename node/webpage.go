@@ -4,18 +4,13 @@ type Webpage struct {
 	INode
 }
 
-func NewWebpage(id string, name string, parentID string) *Webpage {
+func NewWebpage(node INode) INode {
 	w := new(Webpage)
-	w.INode = NewNode(name)
-	w.INode.SetID(id)
-	w.INode.SetParentID(parentID)
-	w.SetType("webpage")
-	return w
-}
-
-func WebNodeConstructor(node INode) INode {
-	w := new(Webpage)
-	w.INode = node
+	if node == nil {
+		w.INode = NewNode()
+	} else {
+		w.INode = node
+	}
 	w.SetType("webpage")
 	return w
 }
@@ -27,5 +22,5 @@ func (n *Webpage) Fields() []Field {
 }
 
 func init() {
-	RegisterConstructor("webpage", WebNodeConstructor)
+	RegisterConstructor("webpage", NewWebpage)
 }
