@@ -1,5 +1,7 @@
 package node
 
+import "github.com/blevesearch/bleve"
+
 type Webpage struct {
 	INode
 }
@@ -19,6 +21,17 @@ func (n *Webpage) Fields() []Field {
 	return []Field{
 		Field{Name: "URL", Type: String},
 	}
+}
+
+func (n *Webpage) Index(index bleve.Index) {
+	index.Index(n.ID(),
+		struct {
+			Name string
+			URL  string
+		}{
+			Name: n.Name(),
+			URL:  Value{value: n.Value("URL")}.String(),
+		})
 }
 
 func init() {

@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"encoding/json"
 
+	"github.com/blevesearch/bleve"
+
 	"github.com/satori/go.uuid"
 )
 
@@ -48,6 +50,7 @@ type INode interface {
 	Fields() []Field
 	Value(name string) interface{}
 	SetValue(name string, value interface{})
+	Index(index bleve.Index)
 }
 
 // INodeRepo is the interface for Node repositories.
@@ -119,6 +122,15 @@ func (n *Node) Value(name string) interface{} {
 
 func (n *Node) SetValue(name string, value interface{}) {
 	n.values[name] = value
+}
+
+func (n *Node) Index(index bleve.Index) {
+	index.Index(n.ID(),
+		struct {
+			Name string
+		}{
+			Name: n.Name(),
+		})
 }
 
 func NewNode() *Node {
