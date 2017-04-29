@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strings"
+
 	"github.com/anaskhan96/soup"
 	"github.com/gin-gonic/gin"
 	"github.com/henkburgstra/kamibasami/node"
@@ -13,6 +15,7 @@ func Test(svc *service.Service, c *gin.Context) {
 }
 
 func storePage(svc *service.Service, url string, path string) (node.INode, error) {
+	path = node.NormalizePath(path)
 	resp, err := soup.Get(url)
 	if err != nil {
 		return nil, err
@@ -31,8 +34,14 @@ func storePage(svc *service.Service, url string, path string) (node.INode, error
 	page.SetName(title)
 	page.SetParentID(parent.ID())
 	page.SetValue("URL", url)
-	svc.NodeRepo().Put(page)
+	repo := svc.NodeRepo()
+	repo.Put(page)
 	page.Index(svc.Index())
+	tags := strings.Split(path, "/")
+	if len(tags) > 0 {
+		repo.SetTags(page.ID(), tags...)
+	}
+
 	return page, nil
 }
 

@@ -59,6 +59,10 @@ type INodeRepo interface {
 	GetWithParent(name string, parent string) (node INode, err error)
 	GetChildren(id string) (nodes []INode, err error)
 	Put(node INode) (err error)
+	Delete(id string) error
+	SetTags(id string, tags ...string) error
+	UnsetTags(id string, tags ...string) error
+	DeleteTag(tag string) error
 }
 
 // Node is the basic implementation of a Node structure.
@@ -145,6 +149,8 @@ func NewNode() *Node {
 type MockNodeRepo struct {
 	nodesByID     map[string]INode
 	nodesByParent map[string]map[string]INode
+	tags          map[string]bool
+	tagsByNode    map[string]map[string]bool
 }
 
 // NewMockNodeRepo creates a new MockNodeRepo instance.
@@ -152,6 +158,7 @@ func NewMockNodeRepo() *MockNodeRepo {
 	r := new(MockNodeRepo)
 	r.nodesByID = make(map[string]INode)
 	r.nodesByParent = make(map[string]map[string]INode)
+	r.tags = make(map[string]bool)
 	return r
 }
 
@@ -195,6 +202,47 @@ func (r *MockNodeRepo) Put(node INode) (err error) {
 	}
 	nodes[node.ParentID()] = node
 	return
+}
+
+func (r *MockNodeRepo) Delete(id string) error {
+	node, ok := r.nodesByID[id]
+	if !ok {
+		return nil
+	}
+	delete(r.nodesByID, id)
+	delete(r.nodesByParent[node.Name()], node.ParentID())
+	return nil
+}
+
+func (r *MockNodeRepo) SetTags(id string, tags ...string) error {
+	for _, tag := range tags {
+		r.tags[tag] = true
+		t, ok := r.tagsByNode[id]
+		if !ok {
+			t = make(map[string]bool)
+			r.tagsByNode[id] = t
+		}
+		t[tag] = true
+	}
+	return nil
+}
+
+func (r *MockNodeRepo) UnsetTags(id string, tags ...string) error {
+	for _, tag := range tags {
+		t, ok := r.tagsByNode[id]
+		if ok {
+			delete(t, tag)
+		}
+	}
+	return nil
+}
+
+func (r *MockNodeRepo) DeleteTag(tag string) error {
+	for _, t := range r.tagsByNode {
+		delete(t, tag)
+	}
+	delete(r.tags, tag)
+	return nil
 }
 
 // NormalizePath makes sure that path delimiters are slashes and not backslashes
@@ -342,26 +390,6 @@ func (r *DBNodeRepo) Get(id string) (INode, error) {
 	return Transform(node), nil
 }
 
-func (r *DBNodeRepo) Put(node INode) (err error) {
-	// TODO: node.Values()
-	values, err := Values2Json(node)
-	if err != nil {
-		// TODO: logging
-	}
-	if node.ID() == "" {
-		node.SetID(uuid.NewV4().String())
-		_, err = r.db.Exec(`INSERT INTO node
-		(node_id, node_type, node_name, parent_id, node_values)
-		VALUES
-		(?, ?, ?, ?, ?)	`, node.ID(), node.Type(), node.Name(), node.ParentID(), values)
-	} else {
-		_, err = r.db.Exec(`UPDATE node
-		SET node_type = ?, node_name = ?, parent_id = ?, node_values = ?
-		WHERE node_id = ?`, node.Type(), node.Name(), node.ParentID(), values, node.ID())
-	}
-	return
-}
-
 func (r *DBNodeRepo) GetChildren(id string) (nodes []INode, err error) {
 	nodes = make([]INode, 0)
 	rows, err := r.db.Query(`SELECT node_id, node_type, node_name, node_values
@@ -411,4 +439,63 @@ func (r *DBNodeRepo) GetWithParent(name string, parent string) (INode, error) {
 	node.SetParentID(parent)
 	node.SetType(nodeType)
 	return Transform(node), nil
+}
+
+func (r *DBNodeRepo) Put(node INode) (err error) {
+	// TODO: node.Values()
+	values, err := Values2Json(node)
+	if err != nil {
+		// TODO: logging
+	}
+	if node.ID() == "" {
+		node.SetID(uuid.NewV4().String())
+		_, err = r.db.Exec(`INSERT INTO node
+		(node_id, node_type, node_name, parent_id, node_values)
+		VALUES
+		(?, ?, ?, ?, ?)	`, node.ID(), node.Type(), node.Name(), node.ParentID(), values)
+	} else {
+		_, err = r.db.Exec(`UPDATE node
+		SET node_type = ?, node_name = ?, parent_id = ?, node_values = ?
+		WHERE node_id = ?`, node.Type(), node.Name(), node.ParentID(), values, node.ID())
+	}
+	return
+}
+
+func (r *DBNodeRepo) Delete(id string) error {
+	_, err := r.db.Exec(`DELETE FROM node WHERE node_id = ?`, id)
+	return err
+}
+
+func (r *DBNodeRepo) SetTags(id string, tags ...string) error {
+	for _, tag := range tags {
+		var nodeTagsId int
+		err := r.db.QueryRow("SELECT node_tags_id FROM node_tags WHERE node_id = ? AND tag_name = ?", id, tag).Scan(&nodeTagsId)
+		switch {
+		case err == sql.ErrNoRows:
+			_, err = r.db.Exec(`INSERT INTO node_tags (node_id, tag_name) VALUES (?, ?)`, id, tag)
+			return err
+		case err != nil:
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *DBNodeRepo) UnsetTags(id string, tags ...string) error {
+	for _, tag := range tags {
+		_, err := r.db.Exec(`DELETE FROM node_tags WHERE node_id = ? AND tag_name = ?`, id, tag)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *DBNodeRepo) DeleteTag(tag string) error {
+	_, err := r.db.Exec(`DELETE FROM node_tags WHERE tag_name = ?`, tag)
+	if err != nil {
+		return err
+	}
+	_, err = r.db.Exec(`DELETE FROM tag WHERE tag_name = ?`, tag)
+	return err
 }
