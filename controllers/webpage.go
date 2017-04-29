@@ -12,10 +12,10 @@ func Test(svc *service.Service, c *gin.Context) {
 	c.String(200, "test")
 }
 
-func storePage(svc *service.Service, url string, path string) (page *node.Webpage, err error) {
+func storePage(svc *service.Service, url string, path string) (node.INode, error) {
 	resp, err := soup.Get(url)
 	if err != nil {
-		return
+		return nil, err
 	}
 	doc := soup.HTMLParse(resp)
 	title := url
@@ -25,13 +25,15 @@ func storePage(svc *service.Service, url string, path string) (page *node.Webpag
 	}
 	parent, err := node.CreatePath(svc.NodeRepo(), path)
 	if err != nil {
-		return
+		return nil, err
 	}
-	page = node.NewWebpage(title)
+	page := node.NewWebpage(nil)
+	page.SetName(title)
 	page.SetParentID(parent.ID())
 	page.SetValue("URL", url)
 	svc.NodeRepo().Put(page)
-	return
+	page.Index(svc.Index())
+	return page, nil
 }
 
 func init() {

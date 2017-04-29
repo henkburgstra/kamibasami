@@ -9,6 +9,7 @@ import (
 
 	"database/sql"
 
+	"github.com/blevesearch/bleve"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -21,7 +22,19 @@ func main() {
 		return
 	}
 	node.CreateTables(db)
+
+	mapping := bleve.NewIndexMapping()
+	index, err := bleve.Open("kamibasami.bleve", mapping)
+	if err != nil {
+		index, err = bleve.New("kamibasami.bleve", mapping)
+	}
+	if err != nil {
+		fmt.Println("Error opening Bleve index")
+		fmt.Println(err)
+		return
+	}
 	svc := service.NewService()
+	svc.SetIndex(index)
 	svc.SetNodeRepo(node.NewDBNodeRepo(db, "sqlite"))
 
 	router := gin.Default()

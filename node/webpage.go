@@ -24,6 +24,10 @@ func (n *Webpage) Fields() []Field {
 }
 
 func (n *Webpage) Index(index bleve.Index) {
+	if index == nil {
+		// TODO: logging
+		return
+	}
 	index.Index(n.ID(),
 		struct {
 			Name string

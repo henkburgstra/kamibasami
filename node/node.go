@@ -125,6 +125,10 @@ func (n *Node) SetValue(name string, value interface{}) {
 }
 
 func (n *Node) Index(index bleve.Index) {
+	if index == nil {
+		// TODO: logging
+		return
+	}
 	index.Index(n.ID(),
 		struct {
 			Name string
