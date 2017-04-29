@@ -27,7 +27,7 @@ func CreateTables(db *sql.DB) {
 	checkerr(err)
 	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS ix_tag_count ON tag(tag_count)`)
 	checkerr(err)
-	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS ix_tag_timestamp on tag(tag_timestemp)`)
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS ix_tag_timestamp on tag(tag_timestamp)`)
 	checkerr(err)
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS node_tags (
 			node_tags_id INTEGER PRIMARY KEY,

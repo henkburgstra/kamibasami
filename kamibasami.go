@@ -24,7 +24,7 @@ func main() {
 	node.CreateTables(db)
 
 	mapping := bleve.NewIndexMapping()
-	index, err := bleve.Open("kamibasami.bleve", mapping)
+	index, err := bleve.Open("kamibasami.bleve")
 	if err != nil {
 		index, err = bleve.New("kamibasami.bleve", mapping)
 	}
@@ -38,7 +38,6 @@ func main() {
 	svc.SetNodeRepo(node.NewDBNodeRepo(db, "sqlite"))
 
 	router := gin.Default()
-	router.GET("/test", testNode)
 	for _, controller := range controllers.Get() {
 		f := router.GET
 		switch controller.Method {
