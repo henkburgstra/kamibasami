@@ -11,14 +11,14 @@ import (
 )
 
 type Webpage struct {
-	URL  string `json: "url"`
-	Path string `json: "path"`
+	URL  string `json:"url"`
+	Path string `json:"path"`
 }
 
 type Result struct {
-	Status int         `json: status`
-	Error  string      `json: error`
-	Data   interface{} `json: data`
+	Status int         `json:"status"`
+	Error  string      `json:"error"`
+	Data   interface{} `json:"data"`
 }
 
 func NewResult() *Result {
