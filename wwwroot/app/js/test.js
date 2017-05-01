@@ -38,7 +38,12 @@ var Test = function() {
         this.path = document.getElementById('path');
         var ok = document.getElementById('btn-ok');
         ok.addEventListener('click', function(evt){
-            self.submit(this.url.value, this.path.value);
+            self.submit(self.url.value, self.path.value);
         });
     };
 };
+
+document.addEventListener('DOMContentLoaded', function () {
+    var test = new Test();
+    test.init();
+});
