@@ -43,6 +43,8 @@ func main() {
 	for _, controller := range controllers.Get() {
 		f := router.GET
 		switch controller.Method {
+		case "GET":
+			f = router.GET
 		case "HEAD":
 			f = router.HEAD
 		case "POST":
@@ -51,6 +53,8 @@ func main() {
 			f = router.PUT
 		case "DELETE":
 			f = router.DELETE
+		default:
+			f = router.GET
 		}
 		f(controller.URI, func(c *gin.Context) {
 			controller.Handler(svc, c)
