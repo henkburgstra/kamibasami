@@ -56,9 +56,11 @@ func main() {
 		default:
 			f = router.GET
 		}
-		f(controller.URI, func(c *gin.Context) {
-			controller.Handler(svc, c)
-		})
+		f(controller.URI, func(controller controllers.Controller) gin.HandlerFunc {
+			return func(c *gin.Context) {
+				controller.Handler(svc, c)
+			}
+		}(controller))
 	}
 	router.Run()
 }
