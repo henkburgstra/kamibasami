@@ -92,5 +92,5 @@ func storePage(svc *service.Service, url string, path string) (node.INode, error
 
 func init() {
 	RegisterController("webpage", "GET", "/webpage/test", Test)
-	RegisterController("webpage", "POST", "/webpage/webpage", postWebpage)
+	RegisterController("webpage", "POST", "/api/webpage", postWebpage)
 }
