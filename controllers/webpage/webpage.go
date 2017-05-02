@@ -1,4 +1,4 @@
-package controllers
+package webpage
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/anaskhan96/soup"
 	"github.com/gin-gonic/gin"
+	"github.com/henkburgstra/kamibasami/controllers"
 	"github.com/henkburgstra/kamibasami/node"
 	"github.com/henkburgstra/kamibasami/service"
 )
@@ -93,6 +94,6 @@ func storePage(svc *service.Service, url string, path string) (node.INode, error
 }
 
 func init() {
-	RegisterController("webpage", "GET", "/webpage/test", Test)
-	RegisterController("webpage", "POST", "/api/webpage", postWebpage)
+	controllers.RegisterController("webpage", "GET", "/webpage/test", Test)
+	controllers.RegisterController("webpage", "POST", "/api/webpage", postWebpage)
 }
