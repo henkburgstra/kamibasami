@@ -69,7 +69,7 @@ func storePage(svc *service.Service, url string, path string) (node.INode, error
 	title := url
 	titleNode := doc.Find("title")
 	if titleNode.Pointer != nil {
-		title = titleNode.Text()
+		title = strings.Trim(titleNode.Text(), "\n\t ")
 	}
 	parent, err := node.CreatePath(svc.NodeRepo(), path)
 	if err != nil {
