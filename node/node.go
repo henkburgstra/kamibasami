@@ -470,7 +470,8 @@ func (r *DBNodeRepo) Delete(id string) error {
 
 func (r *DBNodeRepo) SetTags(id string, tags ...string) error {
 	for _, tag := range tags {
-		err := r.db.QueryRow("SELECT 1 FROM tag WHERE tag_name = ?", tag).Scan()
+		var x int
+		err := r.db.QueryRow("SELECT 1 FROM tag WHERE tag_name = ?", tag).Scan(&x)
 		switch {
 		case err == sql.ErrNoRows:
 			_, err = r.db.Exec(`INSERT INTO tag (tag_name) VALUES (?)`, tag)
