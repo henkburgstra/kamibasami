@@ -84,10 +84,10 @@ func storePage(svc *service.Service, url string, path string) (node.INode, error
 	page.Index(svc.Index())
 	tags := strings.Split(path, "/")
 	if len(tags) > 0 {
-		repo.SetTags(page.ID(), tags...)
+		err = repo.SetTags(page.ID(), tags...)
 	}
 
-	return page, nil
+	return page, err
 }
 
 func init() {

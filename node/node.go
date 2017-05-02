@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"strings"
 
 	"database/sql"
@@ -468,13 +469,29 @@ func (r *DBNodeRepo) Delete(id string) error {
 
 func (r *DBNodeRepo) SetTags(id string, tags ...string) error {
 	for _, tag := range tags {
-		var nodeTagsId int
-		err := r.db.QueryRow("SELECT node_tags_id FROM node_tags WHERE node_id = ? AND tag_name = ?", id, tag).Scan(&nodeTagsId)
+		err := r.db.QueryRow("SELECT 1 FROM tag WHERE tag_name = ?", tag).Scan()
+		switch {
+		case err == sql.ErrNoRows:
+			_, err = r.db.Exec(`INSERT INTO tag (tag_name) VALUES (?)`, tag)
+			if err != nil {
+				fmt.Println(err.Error())
+				return err
+			}
+		case err != nil:
+			fmt.Println(err.Error())
+			return err
+		}
+		var nodeTagsID int
+		err = r.db.QueryRow("SELECT node_tags_id FROM node_tags WHERE node_id = ? AND tag_name = ?", id, tag).Scan(&nodeTagsID)
 		switch {
 		case err == sql.ErrNoRows:
 			_, err = r.db.Exec(`INSERT INTO node_tags (node_id, tag_name) VALUES (?, ?)`, id, tag)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
 			return err
 		case err != nil:
+			fmt.Println(err.Error())
 			return err
 		}
 	}
