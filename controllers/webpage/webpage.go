@@ -6,7 +6,6 @@ import (
 
 	"github.com/anaskhan96/soup"
 	"github.com/gin-gonic/gin"
-	"github.com/henkburgstra/kamibasami/controllers"
 	"github.com/henkburgstra/kamibasami/node"
 	"github.com/henkburgstra/kamibasami/service"
 )
@@ -46,7 +45,7 @@ func Test(svc *service.Service, c *gin.Context) {
 	c.String(200, "test")
 }
 
-func postWebpage(svc *service.Service, c *gin.Context) {
+func PostWebpage(svc *service.Service, c *gin.Context) {
 	var webpage Webpage
 	if c.BindJSON(&webpage) == nil {
 		_, err := storePage(svc, webpage.URL, webpage.Path)
@@ -91,9 +90,4 @@ func storePage(svc *service.Service, url string, path string) (node.INode, error
 		err = repo.SetTags(page.ID(), tags...)
 	}
 	return page, err
-}
-
-func init() {
-	controllers.RegisterController("webpage", "GET", "/webpage/test", Test)
-	controllers.RegisterController("webpage", "POST", "/api/webpage", postWebpage)
 }
