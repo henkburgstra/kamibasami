@@ -75,18 +75,20 @@ func storePage(svc *service.Service, url string, path string) (node.INode, error
 	if err != nil {
 		return nil, err
 	}
-	page := node.NewWebpage(nil)
-	page.SetName(title)
-	page.SetParentID(parent.ID())
-	page.SetValue("URL", url)
 	repo := svc.NodeRepo()
+	page, err := repo.GetWithParent(title, parent.ID())
+	if err != nil {
+		page = node.NewWebpage(nil)
+		page.SetName(title)
+		page.SetParentID(parent.ID())
+	}
+	page.SetValue("URL", url)
 	repo.Put(page)
 	page.Index(svc.Index())
 	tags := strings.Split(path, "/")
 	if len(tags) > 0 {
 		err = repo.SetTags(page.ID(), tags...)
 	}
-
 	return page, err
 }
 
