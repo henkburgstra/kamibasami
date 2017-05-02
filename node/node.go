@@ -336,6 +336,7 @@ func CreatePath(r INodeRepo, path string) (INode, error) {
 		node, err = r.GetWithParent(name, parentID)
 		if err != nil {
 			node = NewNode()
+			node.SetType("folder")
 			node.SetName(name)
 			node.SetParentID(parentID)
 			err = r.Put(node)
