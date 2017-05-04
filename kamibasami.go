@@ -38,6 +38,7 @@ func main() {
 	svc.SetNodeRepo(node.NewDBNodeRepo(db, "sqlite"))
 
 	router := gin.Default()
+	router.LoadHTMLGlob("views/**/*")
 	router.Static("/wwwroot", "./wwwroot")
 
 	for _, controller := range controllers.Get() {
