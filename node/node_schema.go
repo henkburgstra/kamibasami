@@ -37,6 +37,12 @@ func CreateTables(db *sql.DB) {
 			FOREIGN KEY (tag_name) REFERENCES tag(tag_name) ON DELETE CASCADE
 		)`)
 	checkerr(err)
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS field (
+			field_id INTEGER PRIMARY KEY,
+			node_type VARCHAR(32),
+			field_name VARCHAR()
+		)`)
+	checkerr(err)
 	_, err = db.Exec(`PRAGMA foreign_keys = ON`)
 	checkerr(err)
 }
