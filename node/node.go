@@ -72,6 +72,7 @@ type Node struct {
 	nodeType string
 	name     string
 	parentID string
+	fields   []Field
 	values   map[string]interface{}
 }
 
@@ -114,7 +115,7 @@ func (n *Node) SetParentID(id string) {
 }
 
 func (n *Node) Fields() []Field {
-	return make([]Field, 0)
+	return n.fields
 }
 
 func (n *Node) Value(name string) interface{} {
@@ -136,14 +137,26 @@ func (n *Node) Index(index bleve.Index) {
 	}
 	index.Index(n.ID(),
 		struct {
+			Type string
 			Name string
 		}{
+			Type: n.Type(),
 			Name: n.Name(),
 		})
+	fields := make(map[string]string)
+	for _, field := range n.Fields() {
+		v := Value{value: n.Value(field.Name)}.String()
+		if v != "" && v != "NULL" {
+			fields[field.Name] = v
+		}
+		if len(fields) > 0 {
+			index.Index(n.ID(), fields)
+		}
+	}
 }
 
 func NewNode() *Node {
-	return &Node{values: make(map[string]interface{})}
+	return &Node{fields: make([]Field, 0), values: make(map[string]interface{})}
 }
 
 // MockNodeRepo mocks the INodeRepo interface.
