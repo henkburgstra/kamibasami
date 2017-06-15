@@ -5,7 +5,7 @@ import (
 )
 
 func CreateTables(db *sql.DB) {
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS template
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS template (
 			node_type VARCHAR(32) PRIMARY KEY NOT NULL,
 			template_name VARCHAR(120)
 		)`)
