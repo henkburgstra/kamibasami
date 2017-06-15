@@ -14,6 +14,10 @@ func CreateTables(db *sql.DB) {
 		(node_type, template_name)
 		VALUES
 		(?, ?)`, "webpage", "Web page")
+	db.Exec(`INSERT INTO template
+		(node_type, template_name)
+		VALUES
+		(?, ?)`, "folder", "Folder")
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS field (
 			field_id INTEGER PRIMARY KEY,
 			node_type VARCHAR(32),
@@ -22,8 +26,8 @@ func CreateTables(db *sql.DB) {
 			field_size INTEGER,
 			field_default VARCHAR(120),
 			field_description VARCHAR(120),
-			field_tooltip VARCHAR(360)
-			FOREIGN KEY (node_type) REFERENCES template(node_type) ON DELETE CASCADE,
+			field_tooltip VARCHAR(360),
+			FOREIGN KEY (node_type) REFERENCES template(node_type) ON DELETE CASCADE
 		)`)
 	checkerr(err)
 	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS ix_field_name ON field(field_name)`)
@@ -37,8 +41,8 @@ func CreateTables(db *sql.DB) {
             node_type VARCHAR(32),
             node_name VARCHAR(120),
 			parent_id CHAR(36),
-			node_values BLOB
-			FOREIGN KEY (node_type) REFERENCES template(node_type) ON DELETE CASCADE,
+			node_values BLOB,
+			FOREIGN KEY (node_type) REFERENCES template(node_type) ON DELETE CASCADE
         )`)
 	checkerr(err)
 	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS ix_node_name ON node(node_name)`)
