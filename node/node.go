@@ -503,8 +503,8 @@ func (r *DBNodeRepo) SetTags(id string, tags ...string) error {
 			_, err = r.db.Exec(`INSERT INTO node_tags (node_id, tag_name) VALUES (?, ?)`, id, tag)
 			if err != nil {
 				fmt.Println(err.Error())
+				return err
 			}
-			return err
 		case err != nil:
 			fmt.Println(err.Error())
 			return err
