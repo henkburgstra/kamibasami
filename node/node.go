@@ -64,6 +64,7 @@ type INodeRepo interface {
 	SetTags(id string, tags ...string) error
 	UnsetTags(id string, tags ...string) error
 	DeleteTag(tag string) error
+	UpdateTagsWithPath(path string, node INode) error
 }
 
 // Node is the basic implementation of a Node structure.
@@ -259,6 +260,10 @@ func (r *MockNodeRepo) DeleteTag(tag string) error {
 	return nil
 }
 
+func (r *MockNodeRepo) UpdateTagsWithPath(path string, node INode) error {
+	return UpdateTagsWithPath(r, path, node.ID())
+}
+
 // NormalizePath makes sure that path delimiters are slashes and not backslashes
 // and that path doesn't start or end with a slash
 func NormalizePath(p string) (path string) {
@@ -364,6 +369,14 @@ func CreatePath(r INodeRepo, path string) (INode, error) {
 		return nil, NewNotFoundError("")
 	}
 	return Transform(node), nil
+}
+func UpdateTagsWithPath(repo INodeRepo, path string, id string) error {
+	var err error
+	tags := strings.Split(path, "/")
+	if len(tags) > 0 {
+		err = repo.SetTags(id, tags...)
+	}
+	return err
 }
 
 type DBNodeRepo struct {
@@ -530,4 +543,8 @@ func (r *DBNodeRepo) DeleteTag(tag string) error {
 	}
 	_, err = r.db.Exec(`DELETE FROM tag WHERE tag_name = ?`, tag)
 	return err
+}
+
+func (r *DBNodeRepo) UpdateTagsWithPath(path string, node INode) error {
+	return UpdateTagsWithPath(r, path, node.ID())
 }
